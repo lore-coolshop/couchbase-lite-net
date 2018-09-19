@@ -235,16 +235,37 @@ namespace Couchbase.Lite.Sync
             return Modes[2 * Convert.ToInt32(active) + Convert.ToInt32(continuous)];
         }
 
-        [MonoPInvokeCallback(typeof(C4ReplicatorDocumentErrorCallback))]
-        private static void OnDocError(C4Replicator* repl, bool pushing, C4Slice docID, C4Error error, bool transient, void* context)
+        [MonoPInvokeCallback(typeof(C4ReplicatorDocumentEndedCallback))]
+        private static void OnDocEnded(C4Replicator* repl, bool pushing, C4Slice docID, C4Error error, bool transient, void* context)
         {
             var replicator = GCHandle.FromIntPtr((IntPtr)context).Target as Replicator;
             var docIDStr = docID.CreateString();
             replicator?.DispatchQueue.DispatchAsync(() =>
             {
-                replicator.OnDocError(error, pushing, docIDStr ?? "", transient);
+                replicator.OnDocEnded(error, pushing, docIDStr ?? "", transient);
             });
 
+        }
+
+        [MonoPInvokeCallback(typeof(C4ReplicatorBlobProgressCallback))]
+        private static void BlobProgressCallback(C4Replicator* repl, bool pushing, C4Slice docID, C4Slice docProperty, C4BlobKey blobKey, 
+            ulong bytesComplete, ulong bytesTotal, C4Error error, void* context)
+        {
+            var docIDStr = docID.CreateString();
+            var docProptr = docProperty.CreateString();
+            var blobProgress = new C4BlobProgress();
+            blobProgress.docID = docIDStr ?? "";
+            blobProgress.docProperty = docProptr;
+            blobProgress.key = blobKey;
+            blobProgress.bytesCompleted = bytesComplete;
+            blobProgress.bytesTotal = bytesTotal;
+            blobProgress.error = error;
+            var replicator = GCHandle.FromIntPtr((IntPtr)context).Target as Replicator;
+            
+            replicator?.DispatchQueue.DispatchSync(() =>
+            {
+                replicator.BlobProgressCallback(pushing, blobProgress);
+            });
         }
 
         private static TimeSpan RetryDelay(int retryCount)
@@ -343,7 +364,7 @@ namespace Couchbase.Lite.Sync
             return true;
         }
         
-        private void OnDocError(C4Error error, bool pushing, [NotNull]string docID, bool transient)
+        private void OnDocEnded(C4Error error, bool pushing, [NotNull]string docID, bool transient)
         {
             if (_disposed) {
                 return;
@@ -437,7 +458,8 @@ namespace Couchbase.Lite.Sync
                 Push = Mkmode(push, continuous),
                 Pull = Mkmode(pull, continuous),
                 Context = this,
-                OnDocumentError = OnDocError,
+                OnDocumentEnded = OnDocEnded,
+                OnBlobProgressUpdated = BlobProgressCallback,
                 OnStatusChanged = StatusChangedCallback,
                 SocketFactory = &socketFactory
             };
@@ -512,6 +534,30 @@ namespace Couchbase.Lite.Sync
                 _statusChanged.Fire(this, new ReplicatorStatusChangedEventArgs(Status));
             } catch (Exception e) {
                 Log.To.Sync.W(Tag, "Exception during StatusChanged callback", e);
+            }
+        }
+
+        private void BlobProgressCallback(bool pushing, [NotNull]string docID, C4BlobProgress blobProgress)
+        {
+            if (_disposed) {
+                return;
+            }
+            //TODO
+            var logDocID = new SecureLogString(docID, LogMessageSensitivity.PotentiallyInsecure);
+            if (!pushing && blobProgress.error.domain == C4ErrorDomain.LiteCoreDomain && blobProgress.error.code == (int)C4ErrorCode.Conflict) {
+                // Conflict pulling a document -- the revision was added but app needs to resolve it:
+                var safeDocID = new SecureLogString(docID, LogMessageSensitivity.PotentiallyInsecure);
+                Log.To.Sync.I(Tag, $"{this} pulled conflicting version of '{safeDocID}'");
+                try {
+                    Config.Database.ResolveConflict(docID);
+                } catch (Exception e) {
+                    Log.To.Sync.W(Tag, $"Conflict resolution of '{logDocID}' failed", e);
+                }
+            } else {
+
+                var dirStr = pushing ? "pushing" : "pulling";
+                Log.To.Sync.I(Tag,
+                    $"{this}: {dirStr} '{logDocID}' : {blobProgress.error.code} ({Native.c4error_getMessage(blobProgress.error)})");
             }
         }
 

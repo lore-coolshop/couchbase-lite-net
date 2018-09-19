@@ -53,6 +53,7 @@ namespace LiteCore.Interop
 #endif
     enum C4ErrorCode : int
     {
+        //DocumentEnded = 0
         AssertionFailed = 1,
         Unimplemented,
         UnsupportedEncryption,
@@ -93,6 +94,7 @@ namespace LiteCore.Interop
 #endif
     enum C4ErrorDomain : uint
     {
+        //DocumentEnded = 0
         LiteCoreDomain = 1,
         POSIXDomain,
         SQLiteDomain,
