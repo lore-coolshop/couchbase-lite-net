@@ -52,6 +52,12 @@ namespace Couchbase.Lite.Sync
         PushAndPull = Push | Pull
     }
 
+    public enum ReplicatorOptionProgressLevel : int
+    {
+        Overall,
+        PerDocument
+    }
+
     /// <summary>
     /// A class representing configuration options for a <see cref="Replicator"/>
     /// </summary>
@@ -72,6 +78,7 @@ namespace Couchbase.Lite.Sync
         private Uri _remoteUrl;
         private Database _otherDb;
         private C4SocketFactory _socketFactory;
+        private ReplicatorOptionProgressLevel _progressLevel = ReplicatorOptionProgressLevel.Overall;
 
         #endregion
 
@@ -192,6 +199,12 @@ namespace Couchbase.Lite.Sync
         /// </summary>
         [NotNull]
         public IEndpoint Target { get; }
+
+        public ReplicatorOptionProgressLevel ProgressLevel
+        {
+            get => _progressLevel;
+            set => _freezer.SetValue(ref _progressLevel, value);
+        }
 
         #endregion
 

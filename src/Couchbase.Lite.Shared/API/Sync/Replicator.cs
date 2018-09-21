@@ -67,6 +67,12 @@ namespace Couchbase.Lite.Sync
         [NotNull]private readonly ThreadSafety _databaseThreadSafety;
         [NotNull]private readonly Event<ReplicatorStatusChangedEventArgs> _statusChanged =
             new Event<ReplicatorStatusChangedEventArgs>();
+        [NotNull]
+        private readonly Event<ReplicatorBlobProgressUpdatedEventArgs> _blobProgressupdated =
+            new Event<ReplicatorBlobProgressUpdatedEventArgs>();
+        [NotNull]
+        private readonly Event<ReplicatorDocumentReplicatedEventArgs> _documentEndedUpdate =
+            new Event<ReplicatorDocumentReplicatedEventArgs>();
 
         private string _desc;
         private bool _disposed;
@@ -251,20 +257,12 @@ namespace Couchbase.Lite.Sync
         private static void BlobProgressCallback(C4Replicator* repl, bool pushing, C4Slice docID, C4Slice docProperty, C4BlobKey blobKey, 
             ulong bytesComplete, ulong bytesTotal, C4Error error, void* context)
         {
-            var docIDStr = docID.CreateString();
-            var docProptr = docProperty.CreateString();
-            var blobProgress = new C4BlobProgress();
-            blobProgress.docID = docIDStr ?? "";
-            blobProgress.docProperty = docProptr;
-            blobProgress.key = blobKey;
-            blobProgress.bytesCompleted = bytesComplete;
-            blobProgress.bytesTotal = bytesTotal;
-            blobProgress.error = error;
+            var blobProgress = new BlobProgress(docID.CreateString() ?? "", bytesComplete, bytesTotal);
             var replicator = GCHandle.FromIntPtr((IntPtr)context).Target as Replicator;
             
             replicator?.DispatchQueue.DispatchSync(() =>
             {
-                replicator.BlobProgressCallback(pushing, blobProgress);
+                replicator.BlobProgressCallback(pushing, blobProgress, error);
             });
         }
 
@@ -369,7 +367,7 @@ namespace Couchbase.Lite.Sync
             if (_disposed) {
                 return;
             }
-
+            
             var logDocID = new SecureLogString(docID, LogMessageSensitivity.PotentiallyInsecure);
             if (!pushing && error.domain == C4ErrorDomain.LiteCoreDomain && error.code == (int) C4ErrorCode.Conflict) {
                 // Conflict pulling a document -- the revision was added but app needs to resolve it:
@@ -385,6 +383,11 @@ namespace Couchbase.Lite.Sync
                 var dirStr = pushing ? "pushing" : "pulling";
                 Log.To.Sync.I(Tag,
                     $"{this}: {transientStr}error {dirStr} '{logDocID}' : {error.code} ({Native.c4error_getMessage(error)})");
+            }
+            //TODO - need to handle ended notification
+            if (error.domain == C4ErrorDomain.DocumentEnded && error.code == 0) {
+                var status = new DocumentReplicatedStatus(docID, pushing, true);
+                _documentEndedUpdate.Fire(this, new ReplicatorDocumentReplicatedEventArgs(status));
             }
         }
 
@@ -537,27 +540,15 @@ namespace Couchbase.Lite.Sync
             }
         }
 
-        private void BlobProgressCallback(bool pushing, [NotNull]string docID, C4BlobProgress blobProgress)
+        // Must be called from within the ThreadSafety
+        private void BlobProgressCallback(bool pushing, BlobProgress blobProgress, C4Error error)
         {
             if (_disposed) {
                 return;
             }
             //TODO
-            var logDocID = new SecureLogString(docID, LogMessageSensitivity.PotentiallyInsecure);
-            if (!pushing && blobProgress.error.domain == C4ErrorDomain.LiteCoreDomain && blobProgress.error.code == (int)C4ErrorCode.Conflict) {
-                // Conflict pulling a document -- the revision was added but app needs to resolve it:
-                var safeDocID = new SecureLogString(docID, LogMessageSensitivity.PotentiallyInsecure);
-                Log.To.Sync.I(Tag, $"{this} pulled conflicting version of '{safeDocID}'");
-                try {
-                    Config.Database.ResolveConflict(docID);
-                } catch (Exception e) {
-                    Log.To.Sync.W(Tag, $"Conflict resolution of '{logDocID}' failed", e);
-                }
-            } else {
-
-                var dirStr = pushing ? "pushing" : "pulling";
-                Log.To.Sync.I(Tag,
-                    $"{this}: {dirStr} '{logDocID}' : {blobProgress.error.code} ({Native.c4error_getMessage(blobProgress.error)})");
+            if (error.domain == C4ErrorDomain.DocumentEnded && error.code == 0) {
+                _blobProgressupdated.Fire(this, new ReplicatorBlobProgressUpdatedEventArgs(blobProgress));
             }
         }
 

@@ -18,6 +18,7 @@
 using System;
 
 using JetBrains.Annotations;
+using LiteCore.Interop;
 
 namespace Couchbase.Lite.Sync
 {
@@ -38,6 +39,54 @@ namespace Couchbase.Lite.Sync
         #region Constructors
 
         internal ReplicatorStatusChangedEventArgs(ReplicatorStatus status)
+        {
+            Status = status;
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// Event arguments for the <see cref="Replicator.AddDetailChangeListener(EventHandler{ReplicatorBlobProgressUpdatedEventArgs})" /> event
+    /// </summary>
+    public sealed class ReplicatorBlobProgressUpdatedEventArgs : EventArgs
+    {
+        #region Properties
+
+        /// <summary>
+        /// The new status for the <see cref="Replicator"/> in question.
+        /// </summary>
+        public BlobProgress Progress { get; }
+
+        #endregion
+
+        #region Constructors
+
+        internal ReplicatorDetailStatusChangedEventArgs(BlobProgress progress)
+        {
+            Progress = progress;
+        }
+
+        #endregion
+    }
+
+    /// <summary>
+    /// Event arguments for the <see cref="Replicator.AddDetailChangeListener(EventHandler{ReplicatorDocumentReplicatedEventArgs})" /> event
+    /// </summary>
+    public sealed class ReplicatorDocumentReplicatedEventArgs : EventArgs
+    {
+        #region Properties
+
+        /// <summary>
+        /// The new status for the <see cref="Replicator"/> in question.
+        /// </summary>
+        public DocumentReplicatedStatus Status { get; }
+
+        #endregion
+
+        #region Constructors
+
+        internal ReplicatorDocumentReplicatedEventArgs(DocumentReplicatedStatus status)
         {
             Status = status;
         }

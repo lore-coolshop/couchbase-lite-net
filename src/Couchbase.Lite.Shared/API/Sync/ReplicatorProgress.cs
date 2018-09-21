@@ -40,4 +40,45 @@ namespace Couchbase.Lite.Sync
             Total = total;
         }
     }
+
+    public struct BlobProgress
+    {
+        public string DirPath { get; }
+        public string DocID { get; }
+        //public C4Slice docProperty;
+        //public C4BlobKey key;
+
+        /// <summary>
+        /// Gets the number of changes that have finished processing
+        /// </summary>
+        public ulong Completed { get; }
+
+        /// <summary>
+        /// Gets the current count of changes that have been received for
+        /// processing
+        /// </summary>
+        public ulong Total { get; }
+        //public C4Error error;
+
+        internal BlobProgress(string docID, ulong completed, ulong total)
+        {
+            DocID = docID;
+            Completed = completed;
+            Total = total;
+        }
+    };
+
+    public struct DocumentReplicatedStatus
+    {
+        public bool Completed { get; }
+        public bool Pushing { get; }
+        public string DocID { get; }
+
+        internal DocumentReplicatedStatus(string docID, bool pushing, bool completed)
+        {
+            DocID = docID;
+            Completed = completed;
+            Pushing = pushing;
+        }
+    }
 }
