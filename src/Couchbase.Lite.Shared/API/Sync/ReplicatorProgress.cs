@@ -43,8 +43,9 @@ namespace Couchbase.Lite.Sync
 
     public struct BlobProgress
     {
-        public string DirPath { get; }
+        //public string DirPath { get; }
         public string DocID { get; }
+        public bool Pushing { get; }
         //public C4Slice docProperty;
         //public C4BlobKey key;
 
@@ -60,8 +61,9 @@ namespace Couchbase.Lite.Sync
         public ulong Total { get; }
         //public C4Error error;
 
-        internal BlobProgress(string docID, ulong completed, ulong total)
+        internal BlobProgress(bool pushing, string docID, ulong completed, ulong total)
         {
+            pushing = pushing;
             DocID = docID;
             Completed = completed;
             Total = total;

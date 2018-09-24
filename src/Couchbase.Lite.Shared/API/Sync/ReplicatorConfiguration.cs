@@ -238,6 +238,7 @@ namespace Couchbase.Lite.Sync
                 Authenticator = Authenticator,
                 Continuous = Continuous,
                 ReplicatorType = ReplicatorType,
+                ProgressLevel = ProgressLevel,
                 Options = Options
             };
 

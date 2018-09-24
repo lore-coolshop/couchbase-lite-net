@@ -257,7 +257,7 @@ namespace Couchbase.Lite.Sync
         private static void BlobProgressCallback(C4Replicator* repl, bool pushing, C4Slice docID, C4Slice docProperty, C4BlobKey blobKey, 
             ulong bytesComplete, ulong bytesTotal, C4Error error, void* context)
         {
-            var blobProgress = new BlobProgress(docID.CreateString() ?? "", bytesComplete, bytesTotal);
+            var blobProgress = new BlobProgress(pushing, docID.CreateString() ?? "", bytesComplete, bytesTotal);
             var replicator = GCHandle.FromIntPtr((IntPtr)context).Target as Replicator;
             
             replicator?.DispatchQueue.DispatchSync(() =>
