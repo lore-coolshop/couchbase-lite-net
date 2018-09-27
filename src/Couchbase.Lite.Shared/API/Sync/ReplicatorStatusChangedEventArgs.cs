@@ -62,7 +62,7 @@ namespace Couchbase.Lite.Sync
 
         #region Constructors
 
-        internal ReplicatorDetailStatusChangedEventArgs(BlobProgress progress)
+        internal ReplicatorBlobProgressUpdatedEventArgs(BlobProgress progress)
         {
             Progress = progress;
         }

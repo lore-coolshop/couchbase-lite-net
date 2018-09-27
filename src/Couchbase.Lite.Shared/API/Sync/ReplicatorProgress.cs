@@ -63,7 +63,7 @@ namespace Couchbase.Lite.Sync
 
         internal BlobProgress(bool pushing, string docID, ulong completed, ulong total)
         {
-            pushing = pushing;
+            Pushing = pushing;
             DocID = docID;
             Completed = completed;
             Total = total;
