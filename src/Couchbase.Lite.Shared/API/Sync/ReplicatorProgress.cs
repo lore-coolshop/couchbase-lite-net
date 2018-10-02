@@ -59,7 +59,6 @@ namespace Couchbase.Lite.Sync
         /// processing
         /// </summary>
         public ulong Total { get; }
-        //public C4Error error;
 
         internal BlobProgress(bool pushing, string docID, ulong completed, ulong total)
         {

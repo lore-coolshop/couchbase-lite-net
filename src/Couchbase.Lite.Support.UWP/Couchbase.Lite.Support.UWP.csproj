@@ -234,9 +234,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Couchbase.Lite\Couchbase.Lite.csproj">
-      <Project>{dd9cb298-f3a1-4653-883b-352e69c16f93}</Project>
-      <Name>Couchbase.Lite</Name>
+    <ProjectReference Include="..\..\..\src\Couchbase.Lite.Enterprise\Couchbase.Lite.Enterprise.csproj">
+      <Project>{72dbe477-c3bc-4186-8773-04b00db89fd6}</Project>
+      <Name>Couchbase.Lite.Enterprise</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">

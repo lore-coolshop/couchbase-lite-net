@@ -262,7 +262,7 @@ namespace Couchbase.Lite.Sync
             
             replicator?.DispatchQueue.DispatchSync(() =>
             {
-                replicator.BlobProgressCallback(pushing, blobProgress, error);
+                replicator.BlobProgressCallback(blobProgress);
             });
         }
 
@@ -462,7 +462,7 @@ namespace Couchbase.Lite.Sync
                 Pull = Mkmode(pull, continuous),
                 Context = this,
                 OnDocumentEnded = OnDocEnded,
-                OnBlobProgressUpdated = BlobProgressCallback,
+                OnBlobProgress = BlobProgressCallback,
                 OnStatusChanged = StatusChangedCallback,
                 SocketFactory = &socketFactory
             };
@@ -541,15 +541,13 @@ namespace Couchbase.Lite.Sync
         }
 
         // Must be called from within the ThreadSafety
-        private void BlobProgressCallback(bool pushing, BlobProgress blobProgress, C4Error error)
+        private void BlobProgressCallback(BlobProgress blobProgress)
         {
             if (_disposed) {
                 return;
             }
             //TODO
-            if (error.domain == C4ErrorDomain.DocumentEnded && error.code == 0) {
-                _blobProgressupdated.Fire(this, new ReplicatorBlobProgressUpdatedEventArgs(blobProgress));
-            }
+             _blobProgressupdated.Fire(this, new ReplicatorBlobProgressUpdatedEventArgs(blobProgress));
         }
 
         private void UpdateStateProperties(C4ReplicatorStatus state)
