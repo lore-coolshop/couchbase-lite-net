@@ -45,6 +45,11 @@ namespace Couchbase.Lite.Auth
         NetworkCredential Credentials { get; }
     }
 
+    internal interface IBearerAuthorizer : IAuthorizer
+    {
+        Func<string> GetAccessToken { get; }
+    }
+
     internal interface ICustomHeadersAuthorizer : IAuthorizer
     {
         bool AuthorizeRequest(HttpRequestMessage request);

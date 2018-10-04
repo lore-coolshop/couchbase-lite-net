@@ -74,6 +74,16 @@ namespace Couchbase.Lite.Auth
         }
 
         /// <summary>
+        /// Creates an object for handling HTTP Bearer authentication
+        /// </summary>
+        /// <returns>The authenticator</returns>
+        /// <param name="getAccessToken">Callback used to retrieve access token</param>
+        public static IAuthenticator CreateBearerAuthenticator (Func<string> getAccessToken)
+        {
+            return new BearerAuthenticator (getAccessToken);
+        }
+
+        /// <summary>
         /// Creates an object for handling HTTP Digest authentication (experimental)
         /// </summary>
         /// <param name="username">The username to use</param>
